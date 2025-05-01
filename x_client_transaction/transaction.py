@@ -54,7 +54,7 @@ class ClientTransaction:
     def validate_response(self, response: Union[bs4.BeautifulSoup, requests.models.Response]):
         if not isinstance(response, (bs4.BeautifulSoup, requests.models.Response)):
             raise Exception("invalid response")
-        return response if isinstance(response, bs4.BeautifulSoup) else bs4.BeautifulSoup(response.content, 'lxml')
+        return response if isinstance(response, bs4.BeautifulSoup) else bs4.BeautifulSoup(response.content, 'html.parser')
 
     def get_key(self, response=None):
         response = self.validate_response(response) or self.home_page_response
