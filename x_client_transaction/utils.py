@@ -1,8 +1,18 @@
 import re
 import bs4
+import math
 import base64
 from typing import Union
-import decimal
+
+
+class Math:
+
+    @staticmethod
+    def round(num):
+        # using javascript...? just use the native Math.round(num)
+        if num == -0 or -0.5 <= num < 0:
+            return -0.0
+        return math.floor(num + 0.5)
 
 
 def handle_x_migration(session):
@@ -70,11 +80,6 @@ def is_odd(num: Union[int, float]):
         return -1.0
     return 0.0
 
-def js_round(num: Union[int, float], ndigits: int=0):
-    with decimal.localcontext() as ctx:
-        ctx.rounding = decimal.ROUND_HALF_UP
-        dec = decimal.Decimal(num)
-        return float(round(dec, ndigits))
 
 def base64_encode(string):
     string = string.encode() if isinstance(string, str) else string
