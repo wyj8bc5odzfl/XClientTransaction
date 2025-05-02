@@ -23,7 +23,7 @@ Reference :
 Install XClientTransaction with pip
 
 ```python
-pip install XClientTransaction
+pip install XClientTransaction -U --no-cache-dir
 ```
 
 ## Usage/Examples
@@ -32,12 +32,69 @@ pip install XClientTransaction
 python quickstart.py
 ```
 
-OR
+## Get x.com Home Page and ondemand.s File Response
+
+#### Synchronous Version
 
 ```python
+import bs4
+import requests
+from x_client_transaction.utils import generate_headers, handle_x_migration, get_ondemand_file_url
+
+# INITIALIZE SESSION
+session = requests.Session()
+session.headers = generate_headers()
+
+
+# GET HOME PAGE RESPONSE
+# required only when hitting twitter.com but not x.com
+# returns bs4.BeautifulSoup object
+home_page_response = handle_x_migration(session=session)
+
+# for x.com no migration is required, just simply do
+home_page = session.get(url="https://x.com")
+home_page_response = bs4.BeautifulSoup(home_page.content, 'html.parser')
+
+
+# GET ondemand.s FILE RESPONSE
+ondemand_file_url = get_ondemand_file_url(response=home_page_response)
+ondemand_file = session.get(url=ondemand_file_url)
+ondemand_file_response = bs4.BeautifulSoup(ondemand_file.content, 'html.parser')
+```
+
+#### Async Version
+
+```python
+import bs4
+import httpx
+from x_client_transaction.utils import generate_headers, handle_x_migration_async, get_ondemand_file_url
+
+# INITIALIZE SESSION
+session = httpx.AsyncClient(headers=generate_headers())
+
+
+# GET HOME PAGE RESPONSE
+# required only when hitting twitter.com but not x.com
+# returns bs4.BeautifulSoup object
+home_page_response = await handle_x_migration_async(session=session)
+
+# for x.com no migration is required, just simply do
+home_page = await session.get(url="https://x.com")
+home_page_response = bs4.BeautifulSoup(home_page.content, 'html.parser')
+
+
+# GET ondemand.s FILE RESPONSE
+ondemand_file_url = get_ondemand_file_url(response=home_page_response)
+ondemand_file = await session.get(url=ondemand_file_url)
+ondemand_file_response = bs4.BeautifulSoup(ondemand_file.content, 'html.parser')
+```
+
+## Generate X-Client-Transaction-I (tid):
+
+```python
+from urllib.parse import urlparse
 from x_client_transaction import ClientTransaction
 
-response = None # get twitter home page response (check quickstart.py)
 
 # Example 1
 # replace the url and http method as per your use case
@@ -53,7 +110,7 @@ user_by_screen_name_path = urlparse(url=url).path
 # path will be /i/api/graphql/1VOOyvKkiI3FMmkeDNxM9A/UserByScreenName in this case
 
 
-ct = ClientTransaction(response)
+ct = ClientTransaction(home_page_response=home_page_response, ondemand_file_response=ondemand_file_response)
 transaction_id = ct.generate_transaction_id(method=method, path=path)
 transaction_id_for_user_by_screen_name_endpoint = ct.generate_transaction_id(
     method=user_by_screen_name_http_method, path=user_by_screen_name_path)
