@@ -29,6 +29,7 @@ class ClientTransaction:
         self.key_bytes = self.get_key_bytes(key=self.key)
         self.animation_key = self.get_animation_key(
             key_bytes=self.key_bytes, home_page_response=self.home_page_response)
+        self.last_time_random_pair = (-1, -1)
 
     def get_indices(self, ondemand_file_response: bs4.BeautifulSoup):
         key_byte_indices = []
@@ -121,9 +122,15 @@ class ClientTransaction:
         animation_key = self.animate(frames=frame_row, target_time=target_time)
         return animation_key
 
-    def generate_transaction_id(self, method: str, path: str, home_page_response: Optional[bs4.BeautifulSoup] = None, key: Optional[str] = None, animation_key: Optional[str] = None, time_now: Optional[int] = None) -> str:
-        time_now = time_now or math.floor(
-            (time.time() * 1000 - 1682924400 * 1000) / 1000)
+    def generate_transaction_id(self, method: str, path: str, home_page_response: Optional[bs4.BeautifulSoup] = None, key: Optional[str] = None, animation_key: Optional[str] = None, _time_now: Optional[int] = None) -> str:
+        # The tuple (time_now, random_num) can only be used once per request within a second, so reroll until we have a unique pair
+        time_random_pair = self.last_time_random_pair
+        while time_random_pair == self.last_time_random_pair:
+            time_now = _time_now or math.floor(
+                (time.time() * 1000 - 1682924400 * 1000) / 1000)
+            random_num = random.randint(0, 255)
+            time_random_pair = (time_now, random_num)
+        self.last_time_random_pair = time_random_pair
         time_now_bytes = [(time_now >> (i * 8)) & 0xFF for i in range(4)]
         key = key or self.key or self.get_key(
             home_page_response=home_page_response)
@@ -135,7 +142,6 @@ class ClientTransaction:
             f"{method}!{path}!{time_now}{self.random_keyword}{animation_key}".encode()).digest()
         # hash_bytes = [int(hash_val[i]) for i in range(len(hash_val))]
         hash_bytes = list(hash_val)
-        random_num = random.randint(0, 255)
         bytes_arr = [*key_bytes, *time_now_bytes, *
                      hash_bytes[:16], self.random_number]
         out = bytearray(
